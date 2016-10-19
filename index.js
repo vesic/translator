@@ -2,7 +2,7 @@ const fs = require('fs');
 const axios = require('axios');
 // const async = require('async');
 const chalk = require('chalk');
-var program = require('commander');
+const program = require('commander');
 
 let inputFile = 'en-10.json',
     outputFile = 'translate.txt';
@@ -39,12 +39,17 @@ if (fs.existsSync(outputFile)) {
   return;
 }
 
-for (let word of en) {
-  translateWord(word)
-    .then(res => {
-      fs.appendFileSync(outputFile, `${word} => ${res.data.text[0]},\n`);
-      console.log(`${chalk.blue.bgGreen(word)} => ${chalk.bgBlue(res.data.text[0])}`)
-    })
+// slow down api calls
+for (let i = 0, len = en.length; i < len; i++) {
+  let word = en[i];
+  setTimeout(function() {
+    translateWord(word)
+      .then(res => {
+        fs.appendFileSync(outputFile, `${word} => ${res.data.text[0]},\n`);
+        console.log(`${chalk.black.bgWhite(i)} ${chalk.blue.bgGreen(word)} => ${chalk.bgBlue(res.data.text[0])}`)
+      })
+      .catch(err => console.log(err))
+  }, 100 * i);
 }
 
 // read the whole translations file in

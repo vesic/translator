@@ -2,12 +2,27 @@ const fs = require('fs');
 const axios = require('axios');
 // const async = require('async');
 const chalk = require('chalk');
+var program = require('commander');
 
-const fileName = 'en-10.json';
-const en = JSON.parse(fs.readFileSync(fileName, 'utf8'));
+let inputFile = 'en-10.json',
+    outputFile = 'translate.txt';
 
-let translatedWords = [],
-  fromLang = 'en',
+program
+  .option('-i, --input-file <input>', 'Input file')
+  .option('-o, --output-file <output>', 'Output file')
+  .parse(process.argv);
+
+if (program.inputFile) { 
+  inputFile = program.inputFile.toString();
+}
+
+if (program.outputFile) { 
+  outputFile = program.outputFile.toString();
+}
+
+const en = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+
+let fromLang = 'en',
   toLang = 'de',
   key = 'trnsl.1.1.20161019T122138Z.d4647318a3c3e16b.83ecebb28cc8c700faa31b58f632b63304e2bf08';
 
@@ -19,19 +34,20 @@ function translateWord(word) {
 }
 
 // if output exists do not overwrite
-if (fs.existsSync('translate.json')) {
-  throw new Error(`${chalk.red.bgYellow('Translations exists')}`)
+if (fs.existsSync(outputFile)) {
+  console.log(`${chalk.bold.yellow.bgRed('Translations exists try -i <file name> flag')}`)
+  return;
 }
 
-// dirty
 for (let word of en) {
   translateWord(word)
     .then(res => {
-      fs.appendFileSync('translate.json', `${word} => ${res.data.text[0]},\n`);
+      fs.appendFileSync(outputFile, `${word} => ${res.data.text[0]},\n`);
+      console.log(`${chalk.blue.bgGreen(word)} => ${chalk.bgBlue(res.data.text[0])}`)
     })
 }
 
-// clean
+// read the whole translations file in
 // let trFunctions = [];
 
 // for (let word of en) {

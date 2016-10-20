@@ -42,7 +42,34 @@ if (fs.existsSync(outputFile)) {
 }
 
 let translations = [];
+function translationsFill(cb) {
+  for (let i = 0, len = en.length; i < len; i++) {
+    let word = en[i];
+    setTimeout(function() {
+      translateWord(word)
+        .then(res => {
+          // fs.appendFileSync(outputFile, `${word} => ${res.data.text[0]},\n`);
+          translations.push(res.data.text[0])
+          console.log(`${chalk.black.bgWhite(i)} ${chalk.blue.bgGreen(word)} => ${chalk.bgBlue(res.data.text[0])}`)
+        })
+        .catch(err => console.log(err))
+    }, 100 * i);
+  }
+}
 
+async.series([
+  translationsFill,
+  function(cb) {
+    console.log('done here also');
+    cb();
+  }
+], function(err, res) {
+  console.log('finally done!');
+  console.log(translations);
+})
+
+// translationsFill(en);
+return;
 /* v-01
 // slow down api calls
 for (let i = 0, len = en.length; i < len; i++) {

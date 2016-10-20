@@ -1,10 +1,11 @@
 const fs = require('fs');
 const axios = require('axios');
-// const async = require('async');
+const async = require('async');
 const chalk = require('chalk');
 const program = require('commander');
+const _ = require('lodash');
 
-let inputFile = 'en-10.json',
+let inputFile = 'en-10.txt',
     outputFile = 'translate.txt';
 
 program
@@ -20,10 +21,11 @@ if (program.outputFile) {
   outputFile = program.outputFile.toString();
 }
 
-const en = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+// const en = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+const en = fs.readFileSync(inputFile, 'utf-8').split('\n');
 
 let fromLang = 'en',
-  toLang = 'de',
+  toLang = 'fin',
   key = 'trnsl.1.1.20161019T122138Z.d4647318a3c3e16b.83ecebb28cc8c700faa31b58f632b63304e2bf08';
 
 function translateWord(word) {
@@ -39,6 +41,9 @@ if (fs.existsSync(outputFile)) {
   return;
 }
 
+let translations = [];
+
+/* v-01
 // slow down api calls
 for (let i = 0, len = en.length; i < len; i++) {
   let word = en[i];
@@ -51,21 +56,40 @@ for (let i = 0, len = en.length; i < len; i++) {
       .catch(err => console.log(err))
   }, 100 * i);
 }
-
-// read the whole translations file in
-// let trFunctions = [];
-
-// for (let word of en) {
-//   trFunctions.push((cb) => {
-//     translateWord(word)
-//       .then(res => cb(null, res.data.text[0]))
-//       .catch(err => console.log('err', err))
-//   })
-// }
-
-// async.series(trFunctions, function(err, res) {
-//   fs.writeFileSync('translate.json', JSON.stringify(res));
-//   console.log('res', res);
-// })
+*/
 
 
+// v-01: async
+let trFunctions = [];
+
+for (let word of en) {
+  trFunctions.push((cb) => {
+    translateWord(word)
+      .then(res => { 
+        cb(null, res.data.text[0]);
+        console.log(`${chalk.blue.bgGreen(word)} => ${chalk.bgBlue(res.data.text[0])}`)
+      })
+      .catch(err => console.log('err', err))
+  })
+}
+
+async.series(trFunctions, function(err, res) {
+  // filter dups out
+  res = _.uniq(res);
+  let file = fs.createWriteStream(outputFile);
+  file.on('error', function(err) { console.log(err); });
+  res.forEach(function(word) { file.write(word + '\n'); });
+  file.end();
+  console.log(`${chalk.green('Success')}`);
+})
+
+/*
+// filter content by char
+// filterByChar(fileContent, 'a')
+function filterByChar(content, char) {
+    let filtered = content.filter(word => word[0] === char);
+    let result = {};
+    result[char] = filtered;
+    return JSON.stringify(result);
+}
+*/
